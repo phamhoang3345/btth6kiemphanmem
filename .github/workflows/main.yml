@@ -10,39 +10,57 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    env:
-      POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
-      POSTMAN_COLLECTION_ID: ${{ vars.POSTMAN_COLLECTION_ID }}
-      POSTMAN_ENVIRONMENT_ID: ${{ vars.POSTMAN_ENVIRONMENT_ID }}
-
     steps:
-      - name: Checkout repository
+      - name: 1. Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Postman CLI
-        run: |
-          curl -fsSL https://dl-cli.pstmn.io/install/linux64.sh | sh
+      - name: 2. Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Verify Postman API key
-        run: |
-          if [ -z "${POSTMAN_API_KEY}" ]; then
-            echo "Missing GitHub secret POSTMAN_API_KEY"
-            exit 1
-          fi
+      - name: 3. Install Newman CLI
+        run: npm install -g newman
 
-      - name: Login to Postman
+      - name: 4. Tạo kịch bản kiểm tra GET /users (< 800ms) và Chạy Newman
         run: |
-          postman login --with-api-key "${POSTMAN_API_KEY}"
-
-      - name: Run Postman collection
-        run: |
-          if [ -n "${POSTMAN_COLLECTION_ID}" ]; then
-            if [ -n "${POSTMAN_ENVIRONMENT_ID}" ]; then
-              postman collection run "${POSTMAN_COLLECTION_ID}" --environment "${POSTMAN_ENVIRONMENT_ID}" --reporters cli
-            else
-              postman collection run "${POSTMAN_COLLECTION_ID}" --reporters cli
-            fi
-          else
-            echo "Missing Postman Collection ID. Set the variable POSTMAN_COLLECTION_ID."
-            exit 1
-          fi
+          cat << 'EOF' > monitor_collection.json
+          {
+            "info": {
+              "name": "Production_Monitor_GoRest",
+              "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+            },
+            "item": [
+              {
+                "name": "GET /users Availability & Performance",
+                "event": [
+                  {
+                    "listen": "test",
+                    "script": {
+                      "type": "text/javascript",
+                      "exec": [
+                        "pm.test('Status code là 200 OK', function () {",
+                        "    pm.response.to.have.status(200);",
+                        "});",
+                        "pm.test('Thời gian phản hồi dưới 800ms', function () {",
+                        "    pm.expect(pm.response.responseTime).to.be.below(800);",
+                        "});"
+                      ]
+                    }
+                  }
+                ],
+                "request": {
+                  "method": "GET",
+                  "header": [],
+                  "url": {
+                    "raw": "https://gorest.co.in/public/v2/users",
+                    "protocol": "https",
+                    "host": ["gorest", "co", "in"],
+                    "path": ["public", "v2", "users"]
+                  }
+                }
+              }
+            ]
+          }
+          EOF
+          newman run monitor_collection.json --reporters cli
