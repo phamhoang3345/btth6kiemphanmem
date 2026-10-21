@@ -1,20 +1,48 @@
-name: Restful-Booker CI Pipeline
+name: Production Monitor
 
-on: [push, pull_request] # Pipeline kích hoạt khi có ai đó đẩy code lên[cite: 6]
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
-  api-testing:
-    runs-on: ubuntu-latest # Chạy trên một máy chủ Linux ảo[cite: 7]
+  monitor-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+      POSTMAN_COLLECTION_ID: ${{ vars.POSTMAN_COLLECTION_ID }}
+      POSTMAN_ENVIRONMENT_ID: ${{ vars.POSTMAN_ENVIRONMENT_ID }}
+
     steps:
-      - name: 1. Checkout mã nguồn
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: 2. Cài đặt Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      - name: 3. Cài đặt công cụ Newman (Postman CLI)
-        run: npm install -g newman
-      - name: 4. Chạy bộ Test tự động
-        # Lệnh này sẽ giả lập việc bấm "Run Collection" như đã làm trên máy cá nhân[cite: 6, 7]
+
+      - name: Install Postman CLI
         run: |
-          newman run 2474802010123_PhamVanHoang_GoRest.postman_collection -e 2474802010123_PhamVanHoang_GoRest_Env.postman_environment
+          curl -fsSL https://dl-cli.pstmn.io/install/linux64.sh | sh
+
+      - name: Verify Postman API key
+        run: |
+          if [ -z "${POSTMAN_API_KEY}" ]; then
+            echo "Missing GitHub secret POSTMAN_API_KEY"
+            exit 1
+          fi
+
+      - name: Login to Postman
+        run: |
+          postman login --with-api-key "${POSTMAN_API_KEY}"
+
+      - name: Run Postman collection
+        run: |
+          if [ -n "${POSTMAN_COLLECTION_ID}" ]; then
+            if [ -n "${POSTMAN_ENVIRONMENT_ID}" ]; then
+              postman collection run "${POSTMAN_COLLECTION_ID}" --environment "${POSTMAN_ENVIRONMENT_ID}" --reporters cli
+            else
+              postman collection run "${POSTMAN_COLLECTION_ID}" --reporters cli
+            fi
+          else
+            echo "Missing Postman Collection ID. Set the variable POSTMAN_COLLECTION_ID."
+            exit 1
+          fi
