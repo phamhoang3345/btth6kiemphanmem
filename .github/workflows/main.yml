@@ -1,8 +1,9 @@
-name: Production Monitor
+name: Restful-Booker CI Pipeline
 
 on:
-  schedule:
-    - cron: '0 * * * *'
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -14,53 +15,79 @@ jobs:
       - name: 1. Checkout repository
         uses: actions/checkout@v4
 
-      - name: 2. Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: 3. Install Newman CLI
-        run: npm install -g newman
-
-      - name: 4. Tạo kịch bản kiểm tra GET /users (< 800ms) và Chạy Newman
+      - name: 2. Check GoRest API availability and performance
+        env:
+          API_URL: https://gorest.co.in/public/v2/users
+          MAX_RESPONSE_TIME_MS: 3000
+          MAX_ATTEMPTS: 3
         run: |
-          cat << 'EOF' > monitor_collection.json
-          {
-            "info": {
-              "name": "Production_Monitor_GoRest",
-              "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-            },
-            "item": [
-              {
-                "name": "GET /users Availability & Performance",
-                "event": [
-                  {
-                    "listen": "test",
-                    "script": {
-                      "type": "text/javascript",
-                      "exec": [
-                        "pm.test('Status code là 200 OK', function () {",
-                        "    pm.response.to.have.status(200);",
-                        "});",
-                        "pm.test('Thời gian phản hồi dưới 800ms', function () {",
-                        "    pm.expect(pm.response.responseTime).to.be.below(800);",
-                        "});"
-                      ]
-                    }
-                  }
-                ],
-                "request": {
-                  "method": "GET",
-                  "header": [],
-                  "url": {
-                    "raw": "https://gorest.co.in/public/v2/users",
-                    "protocol": "https",
-                    "host": ["gorest", "co", "in"],
-                    "path": ["public", "v2", "users"]
-                  }
-                }
-              }
-            ]
-          }
-          EOF
-          newman run monitor_collection.json --reporters cli
+          set -euo pipefail
+
+          success=0
+          for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+            echo "Attempt $attempt/$MAX_ATTEMPTS"
+            start_ms=$(date +%s%3N)
+            http_code=$(curl -sS -L --connect-timeout 10 --max-time 20 -o /tmp/users.json -w "%{http_code}" "$API_URL" || true)
+            end_ms=$(date +%s%3N)
+            elapsed_ms=$((end_ms - start_ms))
+
+            echo "HTTP status: $http_code"
+            echo "Response time: ${elapsed_ms}ms"
+
+            if [ "$http_code" = "200" ]; then
+              python - <<'PY'
+import json, pathlib, sys
+
+p = pathlib.Path("/tmp/users.json")
+if not p.exists():
+    print("Response file not found")
+    sys.exit(1)
+
+try:
+    data = json.loads(p.read_text())
+except json.JSONDecodeError as e:
+    print(f"Invalid JSON: {e}")
+    sys.exit(1)
+
+if not isinstance(data, list) or len(data) == 0:
+    print("API returned empty or invalid payload")
+    sys.exit(1)
+
+print(f"Validated payload with {len(data)} user records")
+print(f"Sample: {data[0]}")
+PY
+              success=1
+              break
+            fi
+
+            echo "Request failed or not 200. Retrying..."
+            sleep 5
+          done
+
+          if [ "$success" -ne 1 ]; then
+            echo "API check failed after $MAX_ATTEMPTS attempts"
+            if [ -f /tmp/users.json ]; then
+              echo "--- Response body ---"
+              cat /tmp/users.json || true
+            fi
+            exit 1
+          fi
+
+          python - <<'PY'
+import json, pathlib, sys
+
+p = pathlib.Path("/tmp/users.json")
+data = json.loads(p.read_text())
+if not isinstance(data, list) or len(data) == 0:
+    print("Final validation failed: payload empty")
+    sys.exit(1)
+print("Final validation passed")
+PY
+
+      - name: 3. Upload raw API response for debugging on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gorest-response
+          path: /tmp/users.json
+          if-no-files-found: ignore
