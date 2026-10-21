@@ -1,0 +1,364 @@
+{
+  "info": {
+    "_postman_id": "03bfe3de-846a-4a60-8d88-9f2a3c641e98",
+    "name": "2474802010123_PhamVanHoang_GoRest",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "59052880",
+    "_collection_link": "https://go.postman.co/collection/59052880-03bfe3de-846a-4a60-8d88-9f2a3c641e98?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Positive_Cases",
+      "item": [
+        {
+          "name": "POST User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code là 201 Created\", function () {\n    pm.response.to.have.status(201);\n});\n\nvar json = pm.response.json();\npm.environment.set(\"userId\", json.id);\npm.environment.set(\"userEmail\", json.email);\n\npm.test(\"Dữ liệu khớp file CSV\", function () {\n    if (pm.iterationData.get(\"name\")) {\n        pm.expect(json.name).to.eql(pm.iterationData.get(\"name\"));\n    }\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "b3f6e38ccd6290b15b78fa6f06b4569ea0a2fffce07fab3036d32ebdd0717cda",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"{{name}}\",\n    \"gender\": \"{{gender}}\",\n    \"email\": \"hoang_{{$randomInt}}_{{email}}\",\n    \"status\": \"{{status}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://gorest.co.in/public/v2/users",
+              "protocol": "https",
+              "host": [
+                "gorest",
+                "co",
+                "in"
+              ],
+              "path": [
+                "public",
+                "v2",
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code là 200\", () => pm.response.to.have.status(200));\r\npm.test(\"ID khớp\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.environment.get(\"userId\"))));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "b3f6e38ccd6290b15b78fa6f06b4569ea0a2fffce07fab3036d32ebdd0717cda",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://gorest.co.in/public/v2/users/{{userId}}",
+              "protocol": "https",
+              "host": [
+                "gorest",
+                "co",
+                "in"
+              ],
+              "path": [
+                "public",
+                "v2",
+                "users",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code là 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Status đã đổi thành inactive\", () => pm.expect(pm.response.json().status).to.eql(\"inactive\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "b3f6e38ccd6290b15b78fa6f06b4569ea0a2fffce07fab3036d32ebdd0717cda",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"inactive\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://gorest.co.in/public/v2/users/{{userId}}",
+              "protocol": "https",
+              "host": [
+                "gorest",
+                "co",
+                "in"
+              ],
+              "path": [
+                "public",
+                "v2",
+                "users",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code là 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "b3f6e38ccd6290b15b78fa6f06b4569ea0a2fffce07fab3036d32ebdd0717cda",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "https://gorest.co.in/public/v2/users/{{userId}}",
+              "protocol": "https",
+              "host": [
+                "gorest",
+                "co",
+                "in"
+              ],
+              "path": [
+                "public",
+                "v2",
+                "users",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Negative_Cases",
+      "item": [
+        {
+          "name": "GET User sau khi DELETE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code là 404 Not Found\", () => {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\npm.test(\"Thông báo user không tồn tại\", () => {\r\n    const json = pm.response.json();\r\n    pm.expect(json.message).to.eql(\"Resource not found\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "b3f6e38ccd6290b15b78fa6f06b4569ea0a2fffce07fab3036d32ebdd0717cda",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://gorest.co.in/public/v2/users/{{userId}}",
+              "protocol": "https",
+              "host": [
+                "gorest",
+                "co",
+                "in"
+              ],
+              "path": [
+                "public",
+                "v2",
+                "users",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code là 401 Unauthorized\", function () {\r\n    pm.response.to.have.status(401);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Test No Token\",\r\n    \"gender\": \"male\",\r\n    \"email\": \"notoken_999@gmail.com\",\r\n    \"status\": \"active\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://gorest.co.in/public/v2/users",
+              "protocol": "https",
+              "host": [
+                "gorest",
+                "co",
+                "in"
+              ],
+              "path": [
+                "public",
+                "v2",
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code là 422 khi trùng Email\", function () {\r\n    pm.response.to.have.status(422);\r\n});\r\n\r\npm.test(\"Thông báo lỗi email đã tồn tại\", function () {\r\n    var jsonData = pm.response.json();\r\n    // Kiểm tra xem phản hồi trả về có chứa thông báo lỗi email không\r\n    var errorString = JSON.stringify(jsonData);\r\n    pm.expect(errorString).to.include(\"has already been taken\");\r\n});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\n// Pre-request: Tạo lại user với email {{userEmail}} để đảm bảo email tồn tại trong DB\n// Sau đó request này sẽ POST với cùng email đó → expect 422\nconst userEmail = pm.environment.get(\"userEmail\");\nconst token = pm.environment.get(\"token\");\n\npm.sendRequest({\n    url: \"https://gorest.co.in/public/v2/users\",\n    method: \"POST\",\n    header: {\n        \"Content-Type\": \"application/json\",\n        \"Authorization\": \"Bearer \" + token\n    },\n    body: {\n        mode: \"raw\",\n        raw: JSON.stringify({\n            name: \"Temp User For Duplicate Test\",\n            gender: \"male\",\n            email: userEmail,\n            status: \"active\"\n        })\n    }\n}, function (err, res) {\n    if (err) {\n        console.log(\"Pre-request error:\", err);\n    } else {\n        console.log(\"Pre-request: Created temp user with status\", res.code);\n        if (res.code === 201) {\n            const json = res.json();\n            pm.environment.set(\"tempUserId\", json.id);\n        }\n    }\n});\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "b3f6e38ccd6290b15b78fa6f06b4569ea0a2fffce07fab3036d32ebdd0717cda",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Duplicate User\",\n    \"gender\": \"male\",\n    \"email\": \"{{userEmail}}\",\n    \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://gorest.co.in/public/v2/users",
+              "protocol": "https",
+              "host": [
+                "gorest",
+                "co",
+                "in"
+              ],
+              "path": [
+                "public",
+                "v2",
+                "users"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
